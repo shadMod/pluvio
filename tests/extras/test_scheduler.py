@@ -9,8 +9,6 @@ from pluvio.extras.scheduler.utils import group_consecutive_dates
 from pluvio.extras.storage import PluvioStorage
 from pluvio.models import PrecipitationRecord, PrecipitationResult
 
-# ── utils ─────────────────────────────────────────────────────────────────────
-
 
 def test_group_consecutive_single_range():
     dates = [date(2024, 1, 1), date(2024, 1, 2), date(2024, 1, 3)]
@@ -31,9 +29,6 @@ def test_group_consecutive_empty():
 
 def test_group_consecutive_single_date():
     assert group_consecutive_dates([date(2024, 1, 1)]) == [(date(2024, 1, 1), date(2024, 1, 1))]
-
-
-# ── run_nightly_ingest ────────────────────────────────────────────────────────
 
 
 @pytest.fixture
