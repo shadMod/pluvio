@@ -36,26 +36,23 @@ class ERA5LandPrecipitation(BaseDataset):
         }
 
     def parse(self, nc_path: str, lat: float, lon: float) -> PrecipitationResult:
-        ds = xr.open_dataset(nc_path)
+        with xr.open_dataset(nc_path) as ds:
+            # ERA5-Land usa 'valid_time' nelle versioni recenti, 'time' nelle precedenti
+            time_dim = "valid_time" if "valid_time" in ds.dims else "time"
 
-        # ERA5-Land usa 'valid_time' nelle versioni recenti, 'time' nelle precedenti
-        time_dim = "valid_time" if "valid_time" in ds.dims else "time"
+            # tp è in metri → mm; somma ore → giorno
+            daily = (ds["tp"] * 1000).resample({time_dim: "1D"}).sum()
+            point = daily.sel(latitude=lat, longitude=lon, method="nearest")
 
-        # tp è in metri → mm; somma ore → giorno
-        daily = (ds["tp"] * 1000).resample({time_dim: "1D"}).sum()
-        point = daily.sel(latitude=lat, longitude=lon, method="nearest")
-
-        records = [
-            PrecipitationRecord(
-                date=date.fromisoformat(str(t)[:10]),
-                precipitation_mm=val,
-                rained=val > RAIN_THRESHOLD_MM,
-            )
-            for t in point[time_dim].values
-            if (val := max(round(float(point.sel({time_dim: t}).values), 2), 0.0)) is not None
-        ]
-
-        ds.close()
+            records = [
+                PrecipitationRecord(
+                    date=date.fromisoformat(str(t)[:10]),
+                    precipitation_mm=val,
+                    rained=val > RAIN_THRESHOLD_MM,
+                )
+                for t in point[time_dim].values
+                if (val := max(round(float(point.sel({time_dim: t}).values), 2), 0.0)) is not None
+            ]
 
         return PrecipitationResult(
             latitude=lat,

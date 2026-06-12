@@ -4,8 +4,7 @@ from datetime import date, timedelta
 
 
 def group_consecutive_dates(dates: list[date]) -> list[tuple[date, date]]:
-    """
-    Collapse a sorted list of dates into contiguous (start, end) ranges.
+    """Collapse a sorted list of dates into contiguous (start, end) ranges.
 
     Example:
         [2024-01-01, 2024-01-02, 2024-01-03, 2024-01-07]

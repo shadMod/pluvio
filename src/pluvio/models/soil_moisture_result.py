@@ -3,41 +3,31 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, computed_field
+
+from pluvio.constants import DRY_TYPOLOGY
+from .soil_moisture_record import SoilMoistureRecord
 
 if TYPE_CHECKING:
     import polars as pl
 
 
-class PrecipitationRecord(BaseModel):
-    date: date
-    precipitation_mm: float = Field(ge=0.0)
-    rained: bool
-    source: str = "ERA5-LAND-CDS"
-
-
-class PrecipitationResult(BaseModel):
+class SoilMoistureResult(BaseModel):
     latitude: float
     longitude: float
     start_date: date
     end_date: date
-    records: list[PrecipitationRecord]
+    records: list[SoilMoistureRecord]
 
     @computed_field
     @property
-    def total_precipitation_mm(self) -> float:
-        return round(sum(r.precipitation_mm for r in self.records), 2)
-
-    @computed_field
-    @property
-    def rainy_days(self) -> int:
-        return sum(1 for r in self.records if r.rained)
+    def dry_days(self) -> int:
+        return sum(1 for r in self.records if r.dryness_category in DRY_TYPOLOGY)
 
     @computed_field
     @property
     def missing_days(self) -> int:
-        expected = (self.end_date - self.start_date).days + 1
-        return expected - len(self.records)
+        return (self.end_date - self.start_date).days + 1 - len(self.records)
 
     def to_frame(self) -> pl.DataFrame:
         try:
@@ -46,7 +36,6 @@ class PrecipitationResult(BaseModel):
             from pluvio.exceptions import MissingExtraError
 
             raise MissingExtraError("polars", "polars")
-
         return pl.DataFrame([r.model_dump() for r in self.records]).with_columns(
             pl.col("date").cast(pl.Date)
         )
