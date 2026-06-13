@@ -4,17 +4,17 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pluvio"
-version = "0.4.0"
+version = "0.5.0"
 description = "Effortless Copernicus climate data ingestion — precipitation, atmospheric data and more."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "AGPL-3.0-only" }
 authors = [{ name = "shadMod" }]
 keywords = ["copernicus", "era5", "precipitation", "weather", "climate", "cds"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
