@@ -6,6 +6,7 @@ from typing import Any
 import xarray as xr
 
 from pluvio.datasets.base import BaseDataset
+from pluvio.helpers.utils import get_date_range_from_records
 from pluvio.models import PrecipitationRecord, PrecipitationResult
 
 RAIN_THRESHOLD_MM = 0.1
@@ -54,10 +55,11 @@ class ERA5LandPrecipitation(BaseDataset):
                 if (val := max(round(float(point.sel({time_dim: t}).values), 2), 0.0)) is not None
             ]
 
+        start_date, end_date = get_date_range_from_records(records)
         return PrecipitationResult(
             latitude=lat,
             longitude=lon,
-            start_date=records[0].date if records else start_date,
-            end_date=records[-1].date if records else end_date,
+            start_date=start_date,
+            end_date=end_date,
             records=records,
         )
