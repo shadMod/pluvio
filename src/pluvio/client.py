@@ -4,7 +4,7 @@ import os
 
 import cdsapi
 
-from pluvio.constants import _CDS_DEFAULT_URL
+from pluvio.constants import CDS_DEFAULT_URL
 from pluvio.exceptions import CDSAuthError
 
 
@@ -18,7 +18,7 @@ class PluvioClient:
     """
 
     def __init__(self, url: str | None = None, key: str | None = None) -> None:
-        resolved_url = url or os.getenv("CDS_URL", _CDS_DEFAULT_URL)
+        resolved_url = url or os.getenv("CDS_URL", CDS_DEFAULT_URL)
         resolved_key = key or os.getenv("CDS_KEY")
 
         try:
