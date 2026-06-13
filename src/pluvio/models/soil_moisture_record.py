@@ -1,14 +1,10 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field, computed_field
 
 from pluvio.types import DrynessCategory
-
-if TYPE_CHECKING:
-    pass
 
 
 class SoilMoistureRecord(BaseModel):

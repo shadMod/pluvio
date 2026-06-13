@@ -5,25 +5,23 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, computed_field
 
-from pluvio.constants import DRY_TYPOLOGY
-
-from .soil_moisture_record import SoilMoistureRecord
+from .air_quality_record import AirQualityRecord
 
 if TYPE_CHECKING:
     import polars as pl
 
 
-class SoilMoistureResult(BaseModel):
+class AirQualityResult(BaseModel):
     latitude: float
     longitude: float
     start_date: date
     end_date: date
-    records: list[SoilMoistureRecord]
+    records: list[AirQualityRecord]
 
     @computed_field
     @property
-    def dry_days(self) -> int:
-        return sum(1 for r in self.records if r.dryness_category in DRY_TYPOLOGY)
+    def poor_air_days(self) -> int:
+        return sum(1 for r in self.records if r.overall_aqi in ("poor", "very_poor"))
 
     @computed_field
     @property

@@ -1,3 +1,4 @@
+# TODO: split me .-.
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -33,6 +34,7 @@ class PluvioLocation(PluvioBase):
 
     precipitations: Mapped[list[PluvioPrecipitation]] = relationship(back_populates="location")
     soil_moistures: Mapped[list[PluvioSoilMoisture]] = relationship(back_populates="location")
+    air_qualities: Mapped[list[PluvioAirQuality]] = relationship(back_populates="location")
 
 
 class PluvioPrecipitation(PluvioBase):
@@ -72,3 +74,25 @@ class PluvioSoilMoisture(PluvioBase):
     )
 
     location: Mapped[PluvioLocation] = relationship(back_populates="soil_moistures")
+
+
+class PluvioAirQuality(PluvioBase):
+    __tablename__ = "pluvio_air_quality_daily"
+    __table_args__ = (
+        UniqueConstraint("location_id", "date", name="uq_pluvio_air_quality_location_date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    location_id: Mapped[int] = mapped_column(ForeignKey("pluvio_locations.id"), nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    pm10_ugm3: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
+    pm2p5_ugm3: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
+    no2_ugm3: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
+    so2_ugm3: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
+    o3_ugm3: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
+    source: Mapped[str] = mapped_column(String(50), default="CAMS-EU-AQ-REANALYSIS")
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    location: Mapped[PluvioLocation] = relationship(back_populates="air_qualities")

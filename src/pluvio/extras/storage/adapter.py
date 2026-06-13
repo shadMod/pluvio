@@ -8,8 +8,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from pluvio import AirQualityRecord, AirQualityResult
 from pluvio.extras.storage.constants import EXPECTED_DATASET_MODEL_MAP
 from pluvio.extras.storage.models import (
+    PluvioAirQuality,
     PluvioBase,
     PluvioLocation,
     PluvioPrecipitation,
@@ -63,12 +65,15 @@ class PluvioStorage:
             if loc:
                 loc.active = False
 
-    def upsert(self, result: PrecipitationResult | SoilMoistureResult, location_id: int) -> int:
-        """Dispatch upsert to the correct handler based on result type."""
+    def upsert(
+        self, result: PrecipitationResult | SoilMoistureResult | AirQualityResult, location_id: int
+    ) -> int:
         if isinstance(result, PrecipitationResult):
             return self.upsert_precipitation(result, location_id)
         if isinstance(result, SoilMoistureResult):
             return self.upsert_soil_moisture(result, location_id)
+        if isinstance(result, AirQualityResult):
+            return self.upsert_air_quality(result, location_id)
         raise TypeError(f"No storage handler registered for {type(result).__name__}")
 
     def missing_dates_for(
@@ -248,3 +253,68 @@ class PluvioStorage:
             else:
                 session.add(model_class(**row))
         return len(rows)
+
+    def upsert_air_quality(self, result: AirQualityResult, location_id: int) -> int:
+        rows = [
+            {
+                "location_id": location_id,
+                "date": r.date,
+                "pm10_ugm3": r.pm10_ugm3,
+                "pm2p5_ugm3": r.pm2p5_ugm3,
+                "no2_ugm3": r.no2_ugm3,
+                "so2_ugm3": r.so2_ugm3,
+                "o3_ugm3": r.o3_ugm3,
+                "source": r.source,
+            }
+            for r in result.records
+        ]
+        with self._session() as session:
+            return self._upsert_rows(
+                session,
+                PluvioAirQuality,
+                rows,
+                update_columns=[
+                    "pm10_ugm3",
+                    "pm2p5_ugm3",
+                    "no2_ugm3",
+                    "so2_ugm3",
+                    "o3_ugm3",
+                    "ingested_at",
+                ],
+            )
+
+    def get_air_quality(
+        self, location_id: int, start_date: date, end_date: date
+    ) -> AirQualityResult | None:
+        with Session(self._engine) as session:
+            loc = session.get(PluvioLocation, location_id)
+            if not loc:
+                return None
+            rows = (
+                session.query(PluvioAirQuality)
+                .filter(
+                    PluvioAirQuality.location_id == location_id,
+                    PluvioAirQuality.date >= start_date,
+                    PluvioAirQuality.date <= end_date,
+                )
+                .order_by(PluvioAirQuality.date)
+                .all()
+            )
+            return AirQualityResult(
+                latitude=float(loc.latitude),
+                longitude=float(loc.longitude),
+                start_date=start_date,
+                end_date=end_date,
+                records=[
+                    AirQualityRecord(
+                        date=r.date,
+                        pm10_ugm3=float(r.pm10_ugm3) if r.pm10_ugm3 is not None else None,
+                        pm2p5_ugm3=float(r.pm2p5_ugm3) if r.pm2p5_ugm3 is not None else None,
+                        no2_ugm3=float(r.no2_ugm3) if r.no2_ugm3 is not None else None,
+                        so2_ugm3=float(r.so2_ugm3) if r.so2_ugm3 is not None else None,
+                        o3_ugm3=float(r.o3_ugm3) if r.o3_ugm3 is not None else None,
+                        source=r.source,
+                    )
+                    for r in rows
+                ],
+            )
